@@ -1,18 +1,24 @@
-import React from "react";
-import Header from "./Header";
+import React, { useRef, useState } from "react";
 import Camera from "./Camera";
 import VoiceInterface from "./VoiceInterface";
-import "./MainApp.css";
 
-const App = () => {
+const MainApp = () => {
+    const cameraRef = useRef(null);
+    const [statusMessage, setStatusMessage] = useState("");
+
     return (
-        <div className="container">
-            <header className="header">
-                <Header />
-            </header>
-            <Camera />
+        <div className="app-root">
+            <Camera ref={cameraRef} />
+            
+            <VoiceInterface 
+                cameraRef={cameraRef}
+                onError={(msg) => setStatusMessage(`Error: ${msg}`)}
+                onFeedback={(msg) => setStatusMessage(msg)}
+            />
+
+            <div className="status-bar">
+                {statusMessage}
+            </div>
         </div>
     );
 };
-
-export default App;

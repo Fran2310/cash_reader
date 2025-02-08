@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import InstallationPage from "./components/InstallationPage";
 import MainApp from "./components/MainApp";
-import Camera from './components/Camera';
-import VoiceInterface from './components/VoiceInterface';
 import "./App.css";
 
 const App = () => {
