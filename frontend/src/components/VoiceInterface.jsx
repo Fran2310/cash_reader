@@ -3,88 +3,63 @@ import PropTypes from 'prop-types';
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
 /**
- * Interfaz de voz para controlar la cámara mediante comandos
- * @param {Object} props
- * @param {React.MutableRefObject} props.cameraRef - Referencia al componente Camera
- * @param {Function} props.onError - Manejador de errores
- * @param {Function} props.onFeedback - Callback para feedback de usuario
+ * Componente de interfaz de voz optimizado para PWAs
+ * Características principales:
+ * - Gestión de comandos priorizados
+ * - Sistema de reintentos automático
+ * - Compatibilidad con modo offline
  */
 const VoiceInterface = ({ cameraRef, onError, onFeedback }) => {
-    // 1. Comandos base con referencia a la cámara
-    const baseCommands = useMemo(() => [
+    // Comandos esenciales con prioridad
+    const commands = useMemo(() => [
         {
-            keyword: "tomar foto",
+            pattern: /tomar\s*foto|toma\s*foto/i,
             action: () => {
-                if (!cameraRef.current) {
-                    onError("Cámara no disponible");
-                    return;
-                }
+                if (!cameraRef.current) return;
                 cameraRef.current.takePhoto();
-                onFeedback("Foto tomada por voz");
+                onFeedback("Foto capturada por voz");
             },
-            exactMatch: true,
-            minConfidence: 0.8
+            priority: 1
         },
         {
-            keyword: "activar luz",
+            pattern: /activar\s*luz|prender\s*flash/i,
             action: () => cameraRef.current?.activateFlash(),
-            partialMatch: true
-        },
-        {
-            keyword: "apagar luz",
-            action: () => cameraRef.current?.deactivateFlash(),
-            partialMatch: true
+            priority: 2
         }
-    ], [cameraRef, onError, onFeedback]);
+    ], [cameraRef, onFeedback]);
 
-    // 2. Normalización de texto para comandos en español
-    const normalizeText = (text) => {
-        return text
-            .toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar acentos
-            .replace(/[^\w\s]/g, ''); // Eliminar caracteres especiales
-    };
-
-    // 3. Procesamiento de comandos de voz
-    const handleVoiceCommand = (transcript) => {
-        const cleanText = normalizeText(transcript);
+    // Procesamiento eficiente de comandos
+    const handleCommand = useCallback((transcript) => {
+        const match = commands.sort((a, b) => b.priority - a.priority)
+            .find(({ pattern }) => pattern.test(transcript));
         
-        const command = baseCommands.find(({ keyword, exactMatch }) => {
-            const target = normalizeText(keyword);
-            return exactMatch ? 
-                cleanText === target : 
-                cleanText.includes(target);
-        });
+        match?.action();
+    }, [commands]);
 
-        if (command) {
-            try {
-                command.action();
-                console.log(`Comando ejecutado: ${command.keyword}`);
-            } catch (error) {
-                onError(`Error en comando: ${error.message}`);
-            }
-        }
-    };
-
-    // 4. Configuración del reconocimiento de voz
-    const { error, isSupported } = useSpeechRecognition({
-        onCommand: handleVoiceCommand,
-        lang: 'es-ES',
-        continuous: true,
-        debounceTime: 400
+    // Configuración adaptativa para PWAs
+    const { error, isSupported, startListening } = useSpeechRecognition({
+        onCommand: handleCommand,
+        debounceTime: navigator.onLine ? 500 : 1000,
+        lang: 'es-ES'
     });
 
-    // 5. Manejo de estados del sistema
+    // Sistema de reintentos automático
     useEffect(() => {
-        if (!isSupported) {
-            onError("Funcionalidad de voz no soportada");
-            return;
+        if (error?.includes('permiso')) {
+            const timer = setTimeout(() => startListening(), 3000);
+            return () => clearTimeout(timer);
         }
-        
-        if (error) {
-            onError(`Error de voz: ${error}`);
+    }, [error, startListening]);
+
+    // Sincronización con estado de la PWA
+    useEffect(() => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('controllerchange', startListening);
         }
-    }, [error, isSupported, onError]);
+        return () => {
+            navigator.serviceWorker?.removeEventListener('controllerchange', startListening);
+        };
+    }, [startListening]);
 
     return null;
 };
@@ -92,9 +67,8 @@ const VoiceInterface = ({ cameraRef, onError, onFeedback }) => {
 VoiceInterface.propTypes = {
     cameraRef: PropTypes.shape({
         current: PropTypes.shape({
-            takePhoto: PropTypes.func,
-            activateFlash: PropTypes.func,
-            deactivateFlash: PropTypes.func
+            takePhoto: PropTypes.func.isRequired,
+            activateFlash: PropTypes.func
         })
     }).isRequired,
     onError: PropTypes.func.isRequired,
