@@ -3,6 +3,7 @@ import axios from "axios";
 import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
 import useNarrator from "../hooks/useNarrator"; // Importar el hook useNarrator
+import VoiceInterface from "./VoiceInterface";
 import "./Camera.css";
 
 const Camera = () => {
@@ -189,6 +190,7 @@ const Camera = () => {
                 )}
             </div>
             <ActionButtons onRedClick={takePhoto} />
+            <VoiceInterface callTakePhoto={takePhoto} />
         </section>
     );
 };

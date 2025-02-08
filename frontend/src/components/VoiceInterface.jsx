@@ -1,78 +1,32 @@
-import React, { useMemo, useEffect } from "react";
-import PropTypes from 'prop-types';
+import React, { useEffect } from "react";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 
-/**
- * Componente de interfaz de voz optimizado para PWAs
- * Características principales:
- * - Gestión de comandos priorizados
- * - Sistema de reintentos automático
- * - Compatibilidad con modo offline
- */
-const VoiceInterface = ({ cameraRef, onError, onFeedback }) => {
-    // Comandos esenciales con prioridad
-    const commands = useMemo(() => [
+const VoiceInterface = ({ callTakePhoto, additionalCommands = [] }) => {
+    // Comando básico para "Tomar foto"
+    const defaultCommands = [
         {
-            pattern: /tomar\s*foto|toma\s*foto/i,
-            action: () => {
-                if (!cameraRef.current) return;
-                cameraRef.current.takePhoto();
-                onFeedback("Foto capturada por voz");
+            keyword: "tomar foto", // Palabra clave para el comando
+            callback: () => {
+                callTakePhoto();
             },
-            priority: 1
         },
-        {
-            pattern: /activar\s*luz|prender\s*flash/i,
-            action: () => cameraRef.current?.activateFlash(),
-            priority: 2
+    ];
+
+    // Combinar comandos básicos con adicionales
+    const commands = [...defaultCommands, ...additionalCommands];
+
+    // Hook para escuchar comandos de voz
+    useSpeechRecognition((command) => {
+        console.log("Comando detectado:", command);
+
+        // Buscar el comando detectado en la lista de comandos
+        const action = commands.find((c) => command.includes(c.keyword));
+        if (action) {
+            action.callback(); // Ejecutar la función asociada al comando
         }
-    ], [cameraRef, onFeedback]);
-
-    // Procesamiento eficiente de comandos
-    const handleCommand = useCallback((transcript) => {
-        const match = commands.sort((a, b) => b.priority - a.priority)
-            .find(({ pattern }) => pattern.test(transcript));
-        
-        match?.action();
-    }, [commands]);
-
-    // Configuración adaptativa para PWAs
-    const { error, isSupported, startListening } = useSpeechRecognition({
-        onCommand: handleCommand,
-        debounceTime: navigator.onLine ? 500 : 1000,
-        lang: 'es-ES'
     });
 
-    // Sistema de reintentos automático
-    useEffect(() => {
-        if (error?.includes('permiso')) {
-            const timer = setTimeout(() => startListening(), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [error, startListening]);
-
-    // Sincronización con estado de la PWA
-    useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.addEventListener('controllerchange', startListening);
-        }
-        return () => {
-            navigator.serviceWorker?.removeEventListener('controllerchange', startListening);
-        };
-    }, [startListening]);
-
-    return null;
-};
-
-VoiceInterface.propTypes = {
-    cameraRef: PropTypes.shape({
-        current: PropTypes.shape({
-            takePhoto: PropTypes.func.isRequired,
-            activateFlash: PropTypes.func
-        })
-    }).isRequired,
-    onError: PropTypes.func.isRequired,
-    onFeedback: PropTypes.func
+    return null; // Este componente no tiene UI visible
 };
 
 export default VoiceInterface;

@@ -1,120 +1,35 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect } from 'react';
 
-/**
- * Hook optimizado para reconocimiento de voz en PWAs
- * Mejoras clave:
- * - Gestión de recursos con cleanup estricto
- * - Reconexión automática en fallos
- * - Priorización de rendimiento
- */
-export const useSpeechRecognition = ({
-    onCommand,
-    lang = 'es-ES',
-    minConfidence = 0.75,
-    debounceTime = 500,
-    continuous = true
-}) => {
-    const recognition = useRef(null);
-    const [state, setState] = useState({
-        isListening: false,
-        error: null,
-        isSupported: false
-    });
-    const lastActivity = useRef(Date.now());
+export const useSpeechRecognition = (onCommand) => {
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    // Limpiar inactividad después de 30 segundos
-    const activityCheck = useCallback(() => {
-        if (Date.now() - lastActivity.current > 30000) {
-            recognition.current?.stop();
-            setState(prev => ({ ...prev, isListening: false }));
-        }
-    }, []);
+    if (!SpeechRecognition) {
+      console.error('Speech Recognition API no está soportada en este navegador.');
+      return;
+    }
 
-    // Normalización de texto para español
-    const normalizeText = useCallback((text) => {
-        return text.toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9\s]/g, '');
-    }, []);
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES'; // Configura el idioma
+    recognition.interimResults = false;
+    recognition.continuous = true; // Escucha continuamente
 
-    // Manejador de resultados con optimización para PWAs
-    const handleResult = useCallback((event) => {
-        lastActivity.current = Date.now();
-        const result = event.results[event.results.length - 1][0];
-        
-        if (result.confidence < minConfidence) return;
-        if (Date.now() - lastActivity.current < debounceTime) return;
-
-        onCommand(normalizeText(result.transcript));
-    }, [minConfidence, debounceTime, normalizeText, onCommand]);
-
-    // Gestión de errores específica para móviles
-    const handleError = useCallback((event) => {
-        const errors = {
-            'no-speech': 'Micrófono no detectado',
-            'not-allowed': 'Permiso denegado',
-            'network': 'Error de conexión'
-        };
-        setState(prev => ({ ...prev, error: errors[event.error] || event.error }));
-    }, []);
-
-    // Inicio seguro con gestión de permisos
-    const startListening = useCallback(async () => {
-        try {
-            if (!('webkitSpeechRecognition' in window)) {
-                throw new Error('API no soportada');
-            }
-
-            recognition.current = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.current.continuous = continuous;
-            recognition.current.interimResults = false;
-            recognition.current.lang = lang;
-
-            // Event listeners optimizados
-            recognition.current.onstart = () => {
-                setState(prev => ({ ...prev, isListening: true, error: null }));
-                lastActivity.current = Date.now();
-            };
-
-            recognition.current.onresult = handleResult;
-            recognition.current.onerror = handleError;
-
-            // Gestión de permisos para iOS/Android
-            if (navigator.permissions) {
-                const status = await navigator.permissions.query({ name: 'microphone' });
-                if (status.state !== 'granted') throw new Error('permiso_requerido');
-            }
-
-            recognition.current.start();
-            setState(prev => ({ ...prev, isSupported: true }));
-
-            // Limpieza periódica
-            const interval = setInterval(activityCheck, 5000);
-            return () => clearInterval(interval);
-
-        } catch (error) {
-            setState(prev => ({ ...prev, error: error.message }));
-        }
-    }, [continuous, lang, handleResult, handleError, activityCheck]);
-
-    // Detención controlada
-    const stopListening = useCallback(() => {
-        recognition.current?.stop();
-        setState(prev => ({ ...prev, isListening: false }));
-    }, []);
-
-    // Cleanup para evitar memory leaks
-    useEffect(() => {
-        return () => {
-            stopListening();
-            recognition.current = null;
-        };
-    }, [stopListening]);
-
-    return {
-        ...state,
-        startListening,
-        stopListening,
-        toggle: state.isListening ? stopListening : startListening
+    recognition.onresult = (event) => {
+      const command = event.results[0][0].transcript.toLowerCase();
+      console.log('Comando reconocido:', command);
+      onCommand(command); // Llama a la función pasada como parámetro
     };
+
+    recognition.onerror = (event) => {
+      console.error('Error en el reconocimiento:', event.error);
+    };
+
+    recognition.onend = () => {
+      recognition.start(); // Reinicia el reconocimiento automáticamente
+    };
+
+    recognition.start(); // Inicia el reconocimiento al montar el hook
+
+    return () => recognition.abort(); // Limpia el reconocimiento al desmontar
+  }, [onCommand]);
 };
