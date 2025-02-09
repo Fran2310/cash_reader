@@ -1,9 +1,9 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
 import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
 import useNarrator from "../hooks/useNarrator"; // Importar el hook useNarrator
-import useVoiceInterface from '../hooks/useVoiceInterface'; // Importar el hook useVoiceInterface
+import { useVoiceInterface } from '../hooks/useVoiceInterface'; // Importar el hook useVoiceInterface
 import "./Camera.css";
 
 const Camera = () => {
@@ -13,11 +13,6 @@ const Camera = () => {
     const autoCaptureRef = useRef(null);
     const videoTrackRef = useRef(null);
     const [narration, setNarration] = useState("");
-
-    useVoiceInterface({
-        callTakePhoto: takePhoto, // Usa tu función existente takePhoto
-        additionalCommands: []    // Comandos adicionales vacíos por defecto
-    });
 
     // Función para limpiar el valor de `narration` después de la narración
     const handleNarrationComplete = () => {
@@ -181,8 +176,6 @@ const Camera = () => {
             setNarration("Error al procesar la imagen.");
         }
     };
-
-
 
     return (
         <section className="camera-section">
