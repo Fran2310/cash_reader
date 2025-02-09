@@ -3,7 +3,7 @@ import axios from "axios";
 import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
 import useNarrator from "../hooks/useNarrator"; // Importar el hook useNarrator
-import { useVoiceInterface } from '../hooks/useVoiceInterface'; // Importar el hook useVoiceInterface
+import useVoiceInterface from '../hooks/useVoiceInterface'; // Importar el hook useVoiceInterface
 import "./Camera.css";
 
 const Camera = () => {
