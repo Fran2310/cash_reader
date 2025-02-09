@@ -17,7 +17,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 /**
  * Hook personalizado para manejar una interfaz de voz robusta
  * @param {VoiceInterfaceConfig} config - Configuración de la interfaz de voz
- * @returns {{error: string|null, isListening: boolean}} Estado del reconocimiento
+ * @returns {{error: string|null, isListening: boolean, commands: Command[]}} Estado del reconocimiento
  */
 export const useVoiceInterface = ({ callTakePhoto, additionalCommands = [], debug = false }) => {
   // Memoiza los comandos para evitar recreación en cada render
