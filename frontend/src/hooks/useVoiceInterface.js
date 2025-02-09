@@ -59,6 +59,12 @@ export const useVoiceInterface = ({ callTakePhoto, additionalCommands = [], debu
   // Estado del reconocimiento de voz
   useSpeechRecognition(handleVoiceCommand);
 
+  // Sincroniza el estado del listening
+  useEffect(() => {
+    setIsListening(true);
+    return () => setIsListening(false);
+  }, []);
+
   return {
     error,
     isListening,
