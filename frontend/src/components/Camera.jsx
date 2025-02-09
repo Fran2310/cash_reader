@@ -4,7 +4,6 @@ import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
 import useNarrator from "../hooks/useNarrator"; // Importar el hook useNarrator
 import { useVoiceInterface } from '../hooks/useVoiceInterface'; // Importar el hook useVoiceInterface
-//import VoiceInterface from "./VoiceInterface";
 import "./Camera.css";
 
 const Camera = () => {
@@ -25,6 +24,12 @@ const Camera = () => {
     const { processResponse } = useApiResponseProcessor((message) => {
         setNarration(message); // Actualizar `narration` con el nuevo mensaje
     });
+
+    useVoiceInterface({
+        callTakePhoto: takePhoto, // Usa tu función existente takePhoto
+        additionalCommands: []    // Comandos adicionales vacíos por defecto
+    });
+
 
     const activateFlash = async () => {
         if (videoTrackRef.current) {
