@@ -196,8 +196,6 @@ const Camera = () => {
                 )}
             </div>
             <ActionButtons onRedClick={takePhoto} />
-            {error && <p className="error-message">{error}</p>}
-            <p>{isListening ? "Listening for voice commands..." : "Voice commands are off."}</p>
         </section>
     );
 };
