@@ -25,12 +25,6 @@ const Camera = () => {
         setNarration(message); // Actualizar `narration` con el nuevo mensaje
     });
 
-    useVoiceInterface({
-        callTakePhoto: takePhoto, // Usa tu función existente takePhoto
-        additionalCommands: []    // Comandos adicionales vacíos por defecto
-    });
-
-
     const activateFlash = async () => {
         if (videoTrackRef.current) {
             const capabilities = videoTrackRef.current.getCapabilities();
@@ -182,6 +176,12 @@ const Camera = () => {
             setNarration("Error al procesar la imagen.");
         }
     };
+
+    // Configurar el hook useVoiceInterface
+    const { error, isListening } = useVoiceInterface({
+        callTakePhoto: takePhoto,
+        debug: true // Puedes desactivar el modo debug si no lo necesitas
+    });
 
     return (
         <section className="camera-section">
