@@ -1,9 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 
 // Tiempos configurables para mejor mantenimiento
-const RETRY_DELAY = 1000; // 1 segundo entre reintentos
+const RETRY_DELAY = 2000; // 1 segundo entre reintentos
 const MAX_RETRIES = 3; // Máximo de reintentos tras errores
-const COMMAND_DEBOUNCE = 500; // Tiempo mínimo entre comandos procesados
+const COMMAND_DEBOUNCE = 1000; // Tiempo mínimo entre comandos procesados
 
 export const useSpeechRecognition = (onCommand) => {
   const recognitionRef = useRef(null);
