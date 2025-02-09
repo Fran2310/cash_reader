@@ -3,7 +3,7 @@ import axios from "axios";
 import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
 import useNarrator from "../hooks/useNarrator"; // Importar el hook useNarrator
-import { useVoiceInterface } from '../hooks/useVoiceInterface'; // Importar el hook useVoiceInterface
+import useVoiceInterface from '../hooks/useVoiceInterface'; // Importar el hook useVoiceInterface
 import "./Camera.css";
 
 const Camera = () => {
@@ -177,6 +177,12 @@ const Camera = () => {
         }
     };
 
+    // Configurar el hook useVoiceInterface
+    const { error, isListening } = useVoiceInterface({
+        callTakePhoto: takePhoto,
+        debug: true // Puedes desactivar el modo debug si no lo necesitas
+    });
+
     return (
         <section className="camera-section">
             <div className="camera-container">
@@ -190,6 +196,8 @@ const Camera = () => {
                 )}
             </div>
             <ActionButtons onRedClick={takePhoto} />
+            {error && <p className="error-message">{error}</p>}
+            <p>{isListening ? "Listening for voice commands..." : "Voice commands are off."}</p>
         </section>
     );
 };
