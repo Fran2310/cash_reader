@@ -57,13 +57,17 @@ export const useVoiceInterface = ({ callTakePhoto, additionalCommands = [], debu
   }, [mergedCommands, debug]);
 
   // Estado del reconocimiento de voz
-  useSpeechRecognition(handleVoiceCommand);
+  const { startListening, stopListening } = useSpeechRecognition(handleVoiceCommand);
 
   // Sincroniza el estado del listening
   useEffect(() => {
+    startListening();
     setIsListening(true);
-    return () => setIsListening(false);
-  }, []);
+    return () => {
+      stopListening();
+      setIsListening(false);
+    };
+  }, [startListening, stopListening]);
 
   return {
     error,

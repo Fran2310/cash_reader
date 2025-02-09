@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 
 // Tiempos configurables para mejor mantenimiento
-const RETRY_DELAY = 1000; // 1 segundos entre reintentos
+const RETRY_DELAY = 1000; // 1 segundo entre reintentos
 const MAX_RETRIES = 3; // Máximo de reintentos tras errores
 const COMMAND_DEBOUNCE = 800; // Tiempo mínimo entre comandos procesados
 
