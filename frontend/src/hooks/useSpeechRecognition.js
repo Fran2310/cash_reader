@@ -110,4 +110,21 @@ export const useSpeechRecognition = (onCommand) => {
   useEffect(() => {
     savedHandler.current = onCommand;
   }, [onCommand]);
+
+  const startListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.start();
+    }
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+  }, []);
+
+  return {
+    startListening,
+    stopListening
+  };
 };
