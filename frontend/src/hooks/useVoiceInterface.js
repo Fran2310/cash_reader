@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useEffect, useState } from 'react';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useSpeechRecognition } from './useSpeechRecognition';
 
 /**
  * @typedef {Object} VoiceInterfaceConfig
