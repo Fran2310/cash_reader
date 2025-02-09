@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
@@ -13,6 +13,11 @@ const Camera = () => {
     const autoCaptureRef = useRef(null);
     const videoTrackRef = useRef(null);
     const [narration, setNarration] = useState("");
+
+    useVoiceInterface({
+        callTakePhoto: takePhoto, // Usa tu función existente takePhoto
+        additionalCommands: []    // Comandos adicionales vacíos por defecto
+    });
 
     // Función para limpiar el valor de `narration` después de la narración
     const handleNarrationComplete = () => {
@@ -177,11 +182,7 @@ const Camera = () => {
         }
     };
 
-    // Configurar el hook useVoiceInterface
-    const { error, isListening } = useVoiceInterface({
-        callTakePhoto: takePhoto,
-        debug: true // Puedes desactivar el modo debug si no lo necesitas
-    });
+
 
     return (
         <section className="camera-section">
@@ -196,8 +197,6 @@ const Camera = () => {
                 )}
             </div>
             <ActionButtons onRedClick={takePhoto} />
-            {error && <p className="error-message">{error}</p>}
-            <p>{isListening ? "Listening for voice commands..." : "Voice commands are off."}</p>
         </section>
     );
 };
