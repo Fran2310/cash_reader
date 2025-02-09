@@ -57,36 +57,7 @@ export const useVoiceInterface = ({ callTakePhoto, additionalCommands = [], debu
   }, [mergedCommands, debug]);
 
   // Estado del reconocimiento de voz
-  const { start, stop, isListening: speechState } = useSpeechRecognition({
-    onCommand: handleVoiceCommand,
-    lang: 'es-ES',
-    continuous: true
-  });
-
-  // Sincroniza el estado del listening
-  useEffect(() => {
-    setIsListening(speechState);
-  }, [speechState]);
-
-  // Ciclo de vida automático
-  useEffect(() => {
-    try {
-      start();
-      return () => stop();
-    } catch (e) {
-      setError('Error al iniciar reconocimiento de voz');
-      console.error('[Voice Init Error]', e);
-    }
-  }, [start, stop]);
-
-  // Debug: Log de comandos registrados
-  useEffect(() => {
-    if (debug) {
-      console.group('[Voice] Comandos registrados');
-      mergedCommands.forEach(c => console.log(`- ${c.keyword}: ${c.description || 'Sin descripción'}`));
-      console.groupEnd();
-    }
-  }, [mergedCommands, debug]);
+  useSpeechRecognition(handleVoiceCommand);
 
   return {
     error,
