@@ -66,6 +66,8 @@ export const useSpeechRecognition = (onCommand) => {
       if (retryCount.current < MAX_RETRIES) {
         retryCount.current += 1;
         setTimeout(() => recognition.start(), RETRY_DELAY);
+      } else {
+        console.error('Máximo de reintentos alcanzado');
       }
     };
 
