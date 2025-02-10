@@ -3,7 +3,7 @@ import { useEffect, useRef, useCallback } from 'react';
 // Tiempos configurables para mejor mantenimiento
 const RETRY_DELAY = 1000; // 1 segundo entre reintentos
 const MAX_RETRIES = 3; // Máximo de reintentos tras errores
-const COMMAND_DEBOUNCE = 800; // Tiempo mínimo entre comandos procesados
+const COMMAND_DEBOUNCE = 500; // Tiempo mínimo entre comandos procesados
 
 export const useSpeechRecognition = (onCommand) => {
   const recognitionRef = useRef(null);
@@ -48,7 +48,7 @@ export const useSpeechRecognition = (onCommand) => {
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-ES';
     recognition.interimResults = false;
-    recognition.continuous = true; // Cambiado a true para evitar reinicios innecesarios
+    recognition.continuous = false; // Cambiado a false para mejor control
 
     recognition.onresult = (event) => {
       try {
@@ -66,8 +66,6 @@ export const useSpeechRecognition = (onCommand) => {
       if (retryCount.current < MAX_RETRIES) {
         retryCount.current += 1;
         setTimeout(() => recognition.start(), RETRY_DELAY);
-      } else {
-        console.error('Máximo de reintentos alcanzado');
       }
     };
 
@@ -112,21 +110,4 @@ export const useSpeechRecognition = (onCommand) => {
   useEffect(() => {
     savedHandler.current = onCommand;
   }, [onCommand]);
-
-  const startListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.start();
-    }
-  }, []);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-  }, []);
-
-  return {
-    startListening,
-    stopListening
-  };
 };

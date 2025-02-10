@@ -2,8 +2,8 @@ import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
 import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
-import useNarrator from "../hooks/useNarrator"; // Importar el hook useNarrator
-import useVoiceInterface from '../hooks/useVoiceInterface'; // Importar el hook useVoiceInterface
+import useNarrator from "../hooks/useNarrator";
+import { useVoiceInterface } from '../hooks/useVoiceInterface'; // Asegúrate de que el hook esté correctamente importado
 import "./Camera.css";
 
 const Camera = () => {

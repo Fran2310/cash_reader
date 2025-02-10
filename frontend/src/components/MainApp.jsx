@@ -3,7 +3,7 @@ import Header from "./Header";
 import Camera from "./Camera";
 import "./MainApp.css";
 
-const MainApp = () => {
+const App = () => {
     return (
         <div className="container">
             <header className="header">
@@ -14,4 +14,4 @@ const MainApp = () => {
     );
 };
 
-export default MainApp;
+export default App;
