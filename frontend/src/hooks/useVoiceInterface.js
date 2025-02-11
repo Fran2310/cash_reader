@@ -1,88 +1,60 @@
+// useVoiceInterface.js
 import { useMemo, useCallback, useEffect, useState } from 'react';
 import { useSpeechRecognition } from './useSpeechRecognition';
 
-/**
- * @typedef {Object} VoiceInterfaceConfig
- * @property {Function} callTakePhoto - Función para capturar foto
- * @property {Array<Command>} [additionalCommands=[]] - Comandos personalizados adicionales
- * @property {boolean} [debug=false] - Modo debug para logs detallados
- */
-
-/**
- * @typedef {Object} Command
- * @property {string} keyword - Palabra clave para activar el comando
- * @property {Function} callback - Función a ejecutar
- */
-
-/**
- * Hook personalizado para manejar una interfaz de voz robusta
- * @param {VoiceInterfaceConfig} config - Configuración de la interfaz de voz
- * @returns {{error: string|null, isListening: boolean, commands: Command[]}} Estado del reconocimiento
- */
 export const useVoiceInterface = ({ callTakePhoto, additionalCommands = [], debug = false }) => {
-  // Memoiza los comandos para evitar recreación en cada render
-  const mergedCommands = useMemo(() => {
-    /** @type {Command[]} */
-    const defaults = [{
-      keyword: 'tomar foto',
-      callback: callTakePhoto,
-      description: 'Captura una foto usando la cámara'
-    }];
-    
-    return [...defaults, ...additionalCommands];
-  }, [additionalCommands, callTakePhoto]); // Solo recalcula si cambian las dependencias
+    const [error, setError] = useState(null);
+    const [isListening, setIsListening] = useState(false);
+    const commandHistory = useRef([]);
 
-  // Manejo centralizado de errores
-  const [error, setError] = useState(null);
-  const [isListening, setIsListening] = useState(false);
+    const mergedCommands = useMemo(() => [{
+        keyword: 'tomar foto',
+        callback: callTakePhoto,
+        description: 'Captura una foto usando la cámara'
+    }, ...additionalCommands], [additionalCommands, callTakePhoto]);
 
-  // Handler optimizado con memoización
-  const handleVoiceCommand = useCallback((command) => {
-    if (debug) console.debug('[Voice] Comando detectado:', command);
-    
-    try {
-      const matchedCommand = mergedCommands.find(c => {
-        const cleanCommand = command.toLowerCase().trim();
-        return cleanCommand.includes(c.keyword.toLowerCase());
-      });
+    const handleVoiceCommand = useCallback((command) => {
+        try {
+            const cleanCommand = command.toLowerCase().trim();
+            
+            // Prevenir comandos duplicados consecutivos
+            if (commandHistory.current[0] === cleanCommand) return;
+            
+            commandHistory.current.unshift(cleanCommand);
+            if (commandHistory.current.length > 3) commandHistory.current.pop();
 
-      if (matchedCommand) {
-        if (debug) console.info(`[Voice] Ejecutando comando: ${matchedCommand.keyword}`);
-        matchedCommand.callback();
-      }
-    } catch (e) {
-      setError(`Error procesando comando: ${e.message}`);
-      console.error('[Voice Error]', e);
-    }
-  }, [mergedCommands, debug]);
+            const matchedCommand = mergedCommands.find(c => 
+                cleanCommand.includes(c.keyword.toLowerCase())
+            );
 
-  // Estado del reconocimiento de voz
-  const { startListening, stopListening } = useSpeechRecognition(handleVoiceCommand);
+            if (debug) {
+                console.debug('[Voice] Comando detectado:', cleanCommand);
+                if (matchedCommand) console.info(`[Voice] Ejecutando: ${matchedCommand.keyword}`);
+            }
 
-  useEffect(() => {
-    startListening();
-    setIsListening(true);
+            matchedCommand?.callback();
+        } catch (e) {
+            setError(`Error procesando comando: ${e.message}`);
+            console.error('[Voice Error]', e);
+        }
+    }, [mergedCommands, debug]);
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
+    const { startListening, stopListening } = useSpeechRecognition(handleVoiceCommand);
+
+    useEffect(() => {
         startListening();
-      } else {
-        stopListening();
-      }
+        setIsListening(true);
+
+        return () => {
+            stopListening();
+            setIsListening(false);
+        };
+    }, [startListening, stopListening]);
+
+    return {
+        error,
+        isListening,
+        commands: mergedCommands,
+        resetError: () => setError(null)
     };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      stopListening();
-      setIsListening(false);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [startListening, stopListening]);
-
-  return {
-    error,
-    isListening,
-    commands: mergedCommands // Expone comandos para debugging
-  };
 };
