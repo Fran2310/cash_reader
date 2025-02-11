@@ -1,5 +1,4 @@
-// useVoiceInterface.js
-import { useMemo, useCallback, useEffect, useState } from 'react';
+import { useMemo, useCallback, useEffect, useState, useRef } from 'react';
 import { useSpeechRecognition } from './useSpeechRecognition';
 
 export const useVoiceInterface = ({ callTakePhoto, additionalCommands = [], debug = false }) => {
