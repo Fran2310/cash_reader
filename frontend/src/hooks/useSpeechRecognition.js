@@ -11,6 +11,7 @@ export const useSpeechRecognition = (onCommand) => {
     const lastCommandTime = useRef(0);
     const commandQueue = useRef([]);
     const isProcessing = useRef(false);
+    const isListening = useRef(false);
 
     // Usamos useCallback para memoizar el handler y evitar recreaciones
     const handleCommand = useCallback(
@@ -73,25 +74,28 @@ export const useSpeechRecognition = (onCommand) => {
         };
 
         recognition.onend = () => {
-            // Reinicio seguro con delay
-            setTimeout(() => {
-                if (!recognitionRef.current || recognitionRef.current === recognition) {
-                    try {
-                        recognition.start();
-                    } catch (error) {
-                        console.error("Error al reiniciar:", error);
+            if (isListening.current) {
+                // Reinicio seguro con delay
+                setTimeout(() => {
+                    if (!recognitionRef.current || recognitionRef.current === recognition) {
+                        try {
+                            recognition.start();
+                        } catch (error) {
+                            console.error("Error al reiniciar:", error);
+                        }
                     }
-                }
-            }, 500);
+                }, 500);
+            }
         };
 
         return recognition;
     }, [processQueue]);
 
     const startListening = useCallback(() => {
-        if (recognitionRef.current) {
+        if (recognitionRef.current && !isListening.current) {
             try {
                 recognitionRef.current.start();
+                isListening.current = true;
             } catch (error) {
                 console.error("Error starting recognition:", error);
             }
@@ -99,9 +103,10 @@ export const useSpeechRecognition = (onCommand) => {
     }, []);
 
     const stopListening = useCallback(() => {
-        if (recognitionRef.current) {
+        if (recognitionRef.current && isListening.current) {
             try {
                 recognitionRef.current.stop();
+                isListening.current = false;
             } catch (error) {
                 console.error("Error stopping recognition:", error);
             }
