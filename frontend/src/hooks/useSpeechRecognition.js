@@ -88,23 +88,39 @@ export const useSpeechRecognition = (onCommand) => {
         return recognition;
     }, [processQueue]);
 
+    const startListening = useCallback(() => {
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.start();
+            } catch (error) {
+                console.error("Error starting recognition:", error);
+            }
+        }
+    }, []);
+
+    const stopListening = useCallback(() => {
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch (error) {
+                console.error("Error stopping recognition:", error);
+            }
+        }
+    }, []);
+
     useEffect(() => {
         const recognition = setupRecognition();
         if (!recognition) return;
 
         recognitionRef.current = recognition;
 
-        try {
-            recognition.start();
-        } catch (error) {
-            console.error("Error inicializando reconocimiento:", error);
-        }
+        startListening();
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
-                recognition.start();
+                startListening();
             } else {
-                recognition.stop();
+                stopListening();
             }
         };
 
@@ -117,11 +133,16 @@ export const useSpeechRecognition = (onCommand) => {
             }
             document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
-    }, [setupRecognition]);
+    }, [setupRecognition, startListening, stopListening]);
 
     // Actualización en caliente del handler de comandos
     const savedHandler = useRef(onCommand);
     useEffect(() => {
         savedHandler.current = onCommand;
     }, [onCommand]);
+
+    return {
+        startListening,
+        stopListening
+    };
 };
