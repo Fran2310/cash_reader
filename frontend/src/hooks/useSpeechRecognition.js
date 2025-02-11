@@ -3,7 +3,7 @@ import { useEffect, useRef, useCallback } from "react";
 // Tiempos configurables para mejor mantenimiento
 const RETRY_DELAY = 1000; // 1 segundo entre reintentos
 const MAX_RETRIES = 3; // Máximo de reintentos tras errores
-const COMMAND_DEBOUNCE = 500; // Tiempo mínimo entre comandos procesados
+const COMMAND_DEBOUNCE = 1500; // Tiempo mínimo entre comandos procesados
 
 export const useSpeechRecognition = (onCommand) => {
     const recognitionRef = useRef(null);
@@ -51,7 +51,7 @@ export const useSpeechRecognition = (onCommand) => {
         const recognition = new SpeechRecognition();
         recognition.lang = "es-ES";
         recognition.interimResults = false;
-        recognition.continuous = false; // Cambiado a false para mejor control
+        recognition.continuous = true; // Mantenemos la escucha continua
 
         recognition.onresult = (event) => {
             try {
@@ -72,17 +72,11 @@ export const useSpeechRecognition = (onCommand) => {
             }
         };
 
+        // Comentar o eliminar el onend para evitar reinicios automáticos:
         recognition.onend = () => {
-            // Reinicio seguro con delay
-            setTimeout(() => {
-                if (!recognitionRef.current || recognitionRef.current === recognition) {
-                    try {
-                        recognition.start();
-                    } catch (error) {
-                        console.error("Error al reiniciar:", error);
-                    }
-                }
-            }, 500);
+            // Si se detiene, se podría reiniciar manualmente o dejarlo sin reiniciar para mantenerlo activo
+            console.warn("SpeechRecognition terminó, no se reinicia automáticamente para evitar toggles.");
+            // Opcional: podrías reiniciarlo de forma manual con un botón o lógica adicional
         };
 
         return recognition;
@@ -107,6 +101,14 @@ export const useSpeechRecognition = (onCommand) => {
             }
         };
     }, [setupRecognition]);
+
+    // Limpia la cola de comandos cada 500ms para evitar saturación
+    useEffect(() => {
+        const interval = setInterval(() => {
+            commandQueue.current = [];
+        }, 500);
+        return () => clearInterval(interval);
+    }, []);
 
     // Actualización en caliente del handler de comandos
     const savedHandler = useRef(onCommand);
