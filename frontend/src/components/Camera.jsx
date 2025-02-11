@@ -1,41 +1,48 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
 import useNarrator from "../hooks/useNarrator";
-import { useVoiceInterface } from '../hooks/useVoiceInterface'; // Asegúrate de que el hook esté correctamente importado
+import { useVoiceInterface } from "../hooks/useVoiceInterface";
 import "./Camera.css";
 
 const Camera = () => {
+    // Refs para el video, el intervalo automático y el track de video
     const videoRef = useRef(null);
-    const [photo, setPhoto] = useState(null);
-    const [autoCaptureInterval, setAutoCaptureInterval] = useState(0);
     const autoCaptureRef = useRef(null);
     const videoTrackRef = useRef(null);
+
+    // Estados locales
+    const [photo, setPhoto] = useState(null);
+    const [autoCaptureInterval, setAutoCaptureInterval] = useState(0);
     const [narration, setNarration] = useState("");
 
-    // Función para limpiar el valor de `narration` después de la narración
+    // Función para limpiar la narración cuando finaliza
     const handleNarrationComplete = () => {
-        setNarration(""); // Limpiar el valor de `narration`
+        setNarration("");
     };
 
+    // Hooks personalizados para la narración y el procesamiento de respuesta de la API
     useNarrator(narration, handleNarrationComplete);
-
     const { processResponse } = useApiResponseProcessor((message) => {
-        setNarration(message); // Actualizar `narration` con el nuevo mensaje
+        setNarration(message);
     });
 
-    const activateFlash = async () => {
+    /**
+     * Función unificada para controlar el flash.
+     * Recibe un booleano enabled para activar (true) o desactivar (false) el flash.
+     */
+    const setFlash = async (enabled) => {
         if (videoTrackRef.current) {
             const capabilities = videoTrackRef.current.getCapabilities();
             if (capabilities.torch) {
                 try {
                     await videoTrackRef.current.applyConstraints({
-                        advanced: [{ torch: true }],
+                        advanced: [{ torch: enabled }],
                     });
-                    console.log("Flash activado.");
+                    console.log(`Flash ${enabled ? "activado" : "desactivado"}.`);
                 } catch (error) {
-                    console.error("Error al activar el flash:", error);
+                    console.error(`Error al ${enabled ? "activar" : "desactivar"} el flash:`, error);
                 }
             } else {
                 console.warn("El dispositivo no soporta el control del flash.");
@@ -43,38 +50,23 @@ const Camera = () => {
         }
     };
 
-    const deactivateFlash = async () => {
-        if (videoTrackRef.current) {
-            try {
-                await videoTrackRef.current.applyConstraints({
-                    advanced: [{ torch: false }],
-                });
-                console.log("Flash desactivado.");
-            } catch (error) {
-                console.error("Error al desactivar el flash:", error);
-            }
-        }
-    };
-
+    // Obtener el stream de la cámara y gestionar el flash según la visibilidad
     useEffect(() => {
-        // Obtener acceso a la cámara
         const getCameraStream = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: {
-                        facingMode: "environment", // Para usar la cámara trasera
+                        facingMode: "environment",
+                        width: { ideal: 416 },
+                        height: { ideal: 416 },
                     },
                 });
-
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
-
-                    // Guardar el primer track de video
                     const [videoTrack] = stream.getVideoTracks();
                     videoTrackRef.current = videoTrack;
-
                     // Activar el flash inicialmente
-                    activateFlash();
+                    setFlash(true);
                 }
             } catch (error) {
                 console.error("Error al acceder a la cámara:", error);
@@ -85,50 +77,55 @@ const Camera = () => {
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
-                console.log("La app volvió al primer plano.");
-                activateFlash(); // Reactivar el flash al volver al primer plano
+                setFlash(true);
             } else {
-                console.log("La app pasó al segundo plano.");
-                deactivateFlash(); // Desactivar el flash al ir al segundo plano
+                setFlash(false);
             }
         };
 
         document.addEventListener("visibilitychange", handleVisibilityChange);
 
         return () => {
-            // Limpiar recursos al desmontar el componente
             if (videoRef.current && videoRef.current.srcObject) {
                 const stream = videoRef.current.srcObject;
-                const tracks = stream.getTracks();
-                tracks.forEach((track) => track.stop());
+                stream.getTracks().forEach((track) => track.stop());
             }
-
-            deactivateFlash(); // Apagar el flash antes de detener el track
-
-            if (videoTrackRef.current) {
-                videoTrackRef.current.stop();
-            }
-
-            clearInterval(autoCaptureRef.current); // Limpiar el intervalo automático
+            clearInterval(autoCaptureRef.current);
             document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
     }, []);
 
-    // Manejar el intervalo automático
-    useEffect(() => {
-        if (autoCaptureInterval > 0) {
-            clearInterval(autoCaptureRef.current); // Limpiar el intervalo existente
-            autoCaptureRef.current = setInterval(() => {
-                takePhoto();
-            }, autoCaptureInterval * 1000);
-        } else {
-            clearInterval(autoCaptureRef.current); // Detener el intervalo si es 0
-        }
-    }, [autoCaptureInterval]);
+    /**
+     * Función para enviar la imagen capturada a la API.
+     * Se utiliza useCallback para que su referencia sea estable.
+     */
+    const sendPhotoToAPI = useCallback(
+        async (imageData) => {
+            try {
+                const blob = await (await fetch(imageData)).blob();
+                const formData = new FormData();
+                formData.append("image", blob, "captura.jpg");
 
-    const takePhoto = () => {
+                const response = await axios.post("https://cashreader.share.zrok.io/detection", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+
+                console.log("Respuesta de la API:", response.data);
+                processResponse(response.data);
+            } catch (error) {
+                console.error("Error al enviar la imagen a la API:", error);
+                setNarration("No se ha podido comunicar con el servidor, intentelo mas tarde");
+            }
+        },
+        [processResponse]
+    );
+
+    /**
+     * Función para tomar la foto en resolución nativa y enviar la imagen.
+     * Se utiliza useCallback para estabilizar su referencia y evitar recreaciones innecesarias.
+     */
+    const takePhoto = useCallback(() => {
         const video = videoRef.current;
-
         if (!video) {
             console.error("Video no disponible.");
             return;
@@ -137,56 +134,44 @@ const Camera = () => {
         const nativeWidth = video.videoWidth;
         const nativeHeight = video.videoHeight;
 
+        // Canvas para capturar la imagen en tamaño nativo
         const canvas = document.createElement("canvas");
         canvas.width = nativeWidth;
         canvas.height = nativeHeight;
-
         const context = canvas.getContext("2d");
         context.drawImage(video, 0, 0, nativeWidth, nativeHeight);
 
-        // Crear un segundo canvas para reescalar la imagen
-        const resizedCanvas = document.createElement("canvas");
-        const size = 416;
-        resizedCanvas.width = size;
-        resizedCanvas.height = size;
-
-        const resizedContext = resizedCanvas.getContext("2d");
-        resizedContext.drawImage(canvas, 0, 0, nativeWidth, nativeHeight, 0, 0, size, size);
-
-        const imageUrl = resizedCanvas.toDataURL("image/jpeg");
+        // Obtenemos la imagen en la máxima calidad posible.
+        // Se puede especificar la calidad (de 0 a 1) en el toDataURL; usamos 1 para máxima calidad.
+        const imageUrl = canvas.toDataURL("image/jpeg", 1.0);
         setPhoto(imageUrl);
-        console.log("Captura tomada");
+        console.log("Foto tomada");
         sendPhotoToAPI(imageUrl);
-    };
+    }, [sendPhotoToAPI]);
 
-    const sendPhotoToAPI = async (imageData) => {
-        try {
-            const blob = await (await fetch(imageData)).blob();
-            const formData = new FormData();
-            formData.append("image", blob, "captura.jpg");
-
-            const response = await axios.post("https://more-tough-herring.ngrok-free.app/detection", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-
-            console.log("Respuesta de la API:", response.data);
-            processResponse(response.data);
-        } catch (error) {
-            console.error("Error al enviar la imagen a la API:", error);
-            setNarration("Error al procesar la imagen.");
+    // Manejar el intervalo automático de captura según autoCaptureInterval
+    useEffect(() => {
+        if (autoCaptureInterval > 0) {
+            clearInterval(autoCaptureRef.current);
+            autoCaptureRef.current = setInterval(() => {
+                takePhoto();
+            }, autoCaptureInterval * 1000);
+        } else {
+            clearInterval(autoCaptureRef.current);
         }
-    };
+        return () => clearInterval(autoCaptureRef.current);
+    }, [autoCaptureInterval, takePhoto]);
 
     // Configurar el hook useVoiceInterface
     const { error, isListening } = useVoiceInterface({
         callTakePhoto: takePhoto,
-        debug: true // Puedes desactivar el modo debug si no lo necesitas
+        debug: true, // Puedes desactivar el modo debug si no lo necesitas
     });
 
     return (
         <section className="camera-section">
             <div className="camera-container">
-                <video ref={videoRef} autoPlay playsInline className="camera-video"></video>
+                <video ref={videoRef} autoPlay playsInline className="camera-video" />
                 {photo && (
                     <div className="download-container">
                         <a href={photo} download="captura.jpg">
@@ -195,7 +180,7 @@ const Camera = () => {
                     </div>
                 )}
             </div>
-            <ActionButtons onRedClick={takePhoto} />
+            <ActionButtons onCameraButton={takePhoto} />
         </section>
     );
 };
