@@ -1,9 +1,9 @@
 import { useEffect, useRef, useCallback } from "react";
 
-const RETRY_DELAY = 5000;
-const MAX_RETRIES = 5;
-const COMMAND_DEBOUNCE = 1000;
-const MAX_QUEUE_SIZE = 10;
+// Tiempos configurables para mejor mantenimiento
+const RETRY_DELAY = 1000; // 1 segundo entre reintentos
+const MAX_RETRIES = 3; // Máximo de reintentos tras errores
+const COMMAND_DEBOUNCE = 500; // Tiempo mínimo entre comandos procesados
 
 export const useSpeechRecognition = (onCommand) => {
     const recognitionRef = useRef(null);
@@ -11,11 +11,13 @@ export const useSpeechRecognition = (onCommand) => {
     const lastCommandTime = useRef(0);
     const commandQueue = useRef([]);
     const isProcessing = useRef(false);
-    const isActive = useRef(false);
 
+    // Usamos useCallback para memoizar el handler y evitar recreaciones
     const handleCommand = useCallback(
         (command) => {
             const now = Date.now();
+
+            // Debounce para evitar comandos demasiado cercanos en el tiempo
             if (now - lastCommandTime.current > COMMAND_DEBOUNCE) {
                 lastCommandTime.current = now;
                 onCommand(command);
@@ -24,6 +26,7 @@ export const useSpeechRecognition = (onCommand) => {
         [onCommand]
     );
 
+    // Procesamiento en cola para evitar sobrecarga
     const processQueue = useCallback(() => {
         if (!isProcessing.current && commandQueue.current.length > 0) {
             isProcessing.current = true;
@@ -36,71 +39,78 @@ export const useSpeechRecognition = (onCommand) => {
         }
     }, [handleCommand]);
 
+    // Configuración inicial del reconocimiento de voz
     const setupRecognition = useCallback(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return null;
+
+        if (!SpeechRecognition) {
+            console.error("API no soportada");
+            return null;
+        }
 
         const recognition = new SpeechRecognition();
         recognition.lang = "es-ES";
         recognition.interimResults = false;
-        recognition.continuous = true;
+        recognition.continuous = false; // Cambiado a false para mejor control
 
         recognition.onresult = (event) => {
             try {
                 const command = event.results[0][0].transcript.toLowerCase();
-                if (commandQueue.current.length < MAX_QUEUE_SIZE) {
-                    commandQueue.current.push(command);
-                    processQueue();
-                }
+                console.log("Comando detectado:", command);
+                commandQueue.current.push(command);
+                processQueue();
             } catch (error) {
                 console.error("Error procesando resultado:", error);
             }
         };
 
         recognition.onerror = (event) => {
+            console.error("Error:", event.error);
             if (retryCount.current < MAX_RETRIES) {
                 retryCount.current += 1;
-                setTimeout(() => isActive.current && recognition.start(), RETRY_DELAY);
+                setTimeout(() => recognition.start(), RETRY_DELAY);
             }
         };
 
         recognition.onend = () => {
-            if (isActive.current) {
-                setTimeout(() => recognition.start(), 500);
-            }
+            // Reinicio seguro con delay
+            setTimeout(() => {
+                if (!recognitionRef.current || recognitionRef.current === recognition) {
+                    try {
+                        recognition.start();
+                    } catch (error) {
+                        console.error("Error al reiniciar:", error);
+                    }
+                }
+            }, 500);
         };
 
         return recognition;
     }, [processQueue]);
-
-    const startListening = useCallback(() => {
-        if (!isActive.current) {
-            isActive.current = true;
-            recognitionRef.current?.start();
-        }
-    }, []);
-
-    const stopListening = useCallback(() => {
-        if (isActive.current) {
-            isActive.current = false;
-            recognitionRef.current?.stop();
-            commandQueue.current = [];
-            retryCount.current = 0;
-        }
-    }, []);
 
     useEffect(() => {
         const recognition = setupRecognition();
         if (!recognition) return;
 
         recognitionRef.current = recognition;
-        startListening();
+
+        try {
+            recognition.start();
+        } catch (error) {
+            console.error("Error inicializando reconocimiento:", error);
+        }
 
         return () => {
-            stopListening();
-            recognitionRef.current = null;
+            if (recognitionRef.current) {
+                recognitionRef.current.abort();
+                recognitionRef.current = null;
+            }
         };
-    }, [setupRecognition, startListening, stopListening]);
+    }, [setupRecognition]);
 
-    return { startListening, stopListening };
+    // Actualización en caliente del handler de comandos
+    const savedHandler = useRef(onCommand);
+    useEffect(() => {
+        savedHandler.current = onCommand;
+    }, [onCommand]);
 };
