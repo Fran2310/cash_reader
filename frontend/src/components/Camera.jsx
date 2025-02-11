@@ -4,6 +4,7 @@ import ActionButtons from "./ActionButtons";
 import useApiResponseProcessor from "../hooks/useApiResponseProcessor";
 import useNarrator from "../hooks/useNarrator";
 import { useVoiceInterface } from "../hooks/useVoiceInterface";
+import { useVoiceInterface_v2 } from "../hooks/useVoiceInterface_v2";
 import "./Camera.css";
 
 const Camera = () => {
@@ -163,10 +164,14 @@ const Camera = () => {
     }, [autoCaptureInterval, takePhoto]);
 
     // Configurar el hook useVoiceInterface
+    /* DEPRECATED 
     const { error, isListening } = useVoiceInterface({
         callTakePhoto: takePhoto,
         debug: true, // Puedes desactivar el modo debug si no lo necesitas
     });
+    */
+
+    useVoiceInterface_v2();
 
     return (
         <section className="camera-section">
