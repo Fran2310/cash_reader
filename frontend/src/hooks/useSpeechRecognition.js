@@ -51,7 +51,7 @@ export const useSpeechRecognition = (onCommand) => {
         const recognition = new SpeechRecognition();
         recognition.lang = "es-ES";
         recognition.interimResults = false;
-        recognition.continuous = false; // Cambiado a false para mejor control
+        recognition.continuous = true; // Cambiado a true para mantener el reconocimiento activo
 
         recognition.onresult = (event) => {
             try {
@@ -100,11 +100,22 @@ export const useSpeechRecognition = (onCommand) => {
             console.error("Error inicializando reconocimiento:", error);
         }
 
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                recognition.start();
+            } else {
+                recognition.stop();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
         return () => {
             if (recognitionRef.current) {
                 recognitionRef.current.abort();
                 recognitionRef.current = null;
             }
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
     }, [setupRecognition]);
 

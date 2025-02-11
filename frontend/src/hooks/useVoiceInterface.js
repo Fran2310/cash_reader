@@ -57,7 +57,28 @@ export const useVoiceInterface = ({ callTakePhoto, additionalCommands = [], debu
   }, [mergedCommands, debug]);
 
   // Estado del reconocimiento de voz
-  useSpeechRecognition(handleVoiceCommand);
+  const { startListening, stopListening } = useSpeechRecognition(handleVoiceCommand);
+
+  useEffect(() => {
+    startListening();
+    setIsListening(true);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        startListening();
+      } else {
+        stopListening();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopListening();
+      setIsListening(false);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [startListening, stopListening]);
 
   return {
     error,
