@@ -1,91 +1,91 @@
+import cv2 as cv
+import os
 import numpy as np
-import cv2
 
-from PIL import Image, ImageDraw, ImageOps
+def callback(input):
+    pass
 
+def procesar_imagen():
+    root = os.getcwd()
+    imgPath = os.path.join(root, 'backend/src/data/img-API/VEF/Model_9/5b-vef_01-03-25_01_42_38_orign.jpg')
+    img = cv.imread(imgPath)
 
+    # Verifica si la imagen se cargó correctamente
+    if img is None:
+        print("Error: No se pudo cargar la imagen.")
+        return
 
+    # Crear ventanas para Canny y rectángulos detectados
+    cv.namedWindow('Canny')
+    cv.namedWindow('Detection')
 
-# Función para unir puntos cercanos en un contorno
-def simplify_contour(contour, distance_threshold):
-    simplified_contour = [contour[0][0]]  # Inicia con el primer punto
-    for point in contour[1:]:
-        last_point = simplified_contour[-1]
-        # Calcular la distancia euclidiana entre el punto actual y el último en la lista
-        distance = np.linalg.norm(point[0] - last_point)
-        if distance > distance_threshold:
-            simplified_contour.append(point[0])  # Agregar si la distancia es mayor al umbral
-    return np.array(simplified_contour, dtype="int32")
+    # Trackbar para el tamaño del kernel del filtro borroso
+    cv.createTrackbar('blurKernel', 'Canny', 1, 30, callback)
 
-cap = cv2.VideoCapture(0)
-cap.set(3, 640)
-cap.set(4, 480)
+    # Trackbars para los umbrales de Canny
+    cv.createTrackbar('minThres', 'Canny', 0, 500, callback)
+    cv.createTrackbar('maxThres', 'Canny', 0, 500, callback)
 
-while True:
-    ret, image= cap.read()
-    # Convertir a escala de grises
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # Aplicar un filtro para reducir el ruido
-    # blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    blurred = cv2.bilateralFilter(gray, 9, 75, 75)
+    # Trackbars para Shi-Tomasi Corner Detection
+    cv.createTrackbar('qualityLevel', 'Detection', 0, 100, callback)
+    cv.createTrackbar('minDistance', 'Detection', 0, 200, callback)
 
+    while True:
+        if cv.waitKey(1) == ord('q'):
+            break
 
-    # Detectar bordes con Canny
-    low_threshold = 300  # Ajustar estos valores según el contraste de la imagen
-    high_threshold = 25
-    edges = cv2.Canny(blurred, low_threshold, high_threshold)
+        # Obtener los valores de los trackbars
+        minThres = cv.getTrackbarPos('minThres', 'Canny')
+        maxThres = cv.getTrackbarPos('maxThres', 'Canny')
+        blurKernel = cv.getTrackbarPos('blurKernel', 'Canny')
 
+        qualityLevel = cv.getTrackbarPos('qualityLevel', 'Detection')
+        minDistance = cv.getTrackbarPos('minDistance', 'Detection')
 
-    # Dilate the image
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))  # Tamaño del kernel ajustable
-    dilataded = cv2.dilate(edges, kernel, iterations=1)
-    dilataded = cv2.morphologyEx(dilataded, cv2.MORPH_CLOSE, kernel)
+        # Asegurarse de que el tamaño del kernel sea impar y mayor que 1
+        if blurKernel < 1:
+            blurKernel = 1
+        if blurKernel % 2 == 0:
+            blurKernel += 1
 
+        # Aplicar el filtro borroso
+        blurredImg = cv.GaussianBlur(img, (blurKernel, blurKernel), 0)
 
-    # Mostrar la imagen de bordes
-    cv2.imshow("Bordes Detectados (Canny)", dilataded)
+        # Aplicar el filtro de Canny a la imagen borrosa
+        cannyEdge = cv.Canny(blurredImg, minThres, maxThres)
 
-    # Encontrar contornos
-    contours, _ = cv2.findContours(dilataded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Mostrar la imagen de Canny en su ventana
+        cv.imshow('Canny', cannyEdge)
 
-    if contours:
-        # Buscar el contorno más grande (suponiendo que es el billete)
-        largest_contour = max(contours, key=cv2.contourArea)
+        # Detectar esquinas usando Shi-Tomasi Corner Detection
+        corners = cv.goodFeaturesToTrack(cannyEdge, maxCorners=4, qualityLevel=qualityLevel/100+0.01, minDistance=minDistance)
 
-        peri = cv2.arcLength(largest_contour, True)
-        epsilon = 0.02 * peri
-        approx = cv2.approxPolyDP(largest_contour, epsilon, True)
+        # Crear una copia de la imagen original para dibujar los rectángulos
+        img_rectangulos = img.copy()
 
-        #distance_threshold = 250  # Umbral de distancia
-        #simplified_contour = simplify_contour(approx, distance_threshold)
-        #print(len(approx), "->", len(simplified_contour))
+        if corners is not None:
+            # Convertir las esquinas a coordenadas enteras
+            corners = np.int64(corners)
 
-        # Dibujar el contorno detectado
-        result = image.copy()
-        cv2.drawContours(result, [approx], -1, (0, 255, 0), 2)
-        cv2.imshow('result', result)
+            # Dibujar las esquinas detectadas
+            for corner in corners:
+                x, y = corner.ravel()
+                cv.circle(img_rectangulos, (x, y), 5, (0, 255, 0), -1)  # Dibujar un círculo en cada esquina
 
+            # Si se detectan exactamente 4 esquinas, dibujar el rectángulo
+            if len(corners) == 4:
+                # Ordenar las esquinas para formar un rectángulo
+                corners = corners.reshape(4, 2)
+                rect = cv.boundingRect(corners)
+                x, y, w, h = rect
 
-    """
-    # Mostrar la imagen con el contorno detectado
-    cv2.imshow('Webcam', image)
-    cv2.imshow('dilataded', dilataded)
+                # Dibujar el rectángulo en la imagen
+                cv.rectangle(img_rectangulos, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
-    #color_coverted = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) 
-    PIL_org_image = Image.fromarray(image) 
-    PIL_bin_image = Image.fromarray(dilataded).convert('L')
-    binary_image = PIL_bin_image.point(lambda p: p > 128 and 255)
-    bbox = binary_image.getbbox()  # (x_min, y_min, x_max, y_max)
+        # Mostrar la imagen con los rectángulos detectados
+        cv.imshow('Detection', img_rectangulos)
 
-    draw = ImageDraw.Draw(PIL_org_image)
-    draw.rectangle(bbox, outline="green", width=10)
+    cv.destroyAllWindows()
 
-    cv2.imshow("bounding box", np.array(PIL_org_image))
-    """
-
-
-    if cv2.waitKey(1) == ord('q'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == '__main__':
+    procesar_imagen()
