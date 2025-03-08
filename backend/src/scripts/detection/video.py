@@ -1,22 +1,32 @@
 import cv2 as cv
-import os
 import numpy as np
+import os
 
 def callback(input):
     pass
 
-def segmentar_por_tamaño(roi, umbral_area=1000):
+def segmentar_por_contraste(img, umbral_contraste=100, umbral_area=1000):
     """
-    Segmenta la ROI por tamaño.
-    :param roi: Región de interés (imagen recortada).
+    Segmenta la imagen basada en el contraste.
+    :param img: Imagen de entrada.
+    :param umbral_contraste: Umbral para resaltar regiones de alto contraste.
     :param umbral_area: Área mínima para considerar una región relevante.
-    :return: Máscara binaria de la segmentación y la ROI filtrada.
+    :return: Máscara binaria y la imagen segmentada.
     """
-    # Convertir la ROI a escala de grises
-    gray = cv.cvtColor(roi, cv.COLOR_BGR2GRAY)
+    # Convertir la imagen a escala de grises
+    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-    # Aplicar umbralización para obtener una máscara binaria
-    _, mask = cv.threshold(gray, 0, 255, cv.THRESH_OTSU)
+    # Aplicar un filtro de suavizado para reducir el ruido
+    blurred = cv.GaussianBlur(gray, (9, 9), 0)
+
+    # Calcular el gradiente (contraste) usando Sobel
+    grad_x = cv.Sobel(blurred, cv.CV_64F, 1, 0, ksize=3)
+    grad_y = cv.Sobel(blurred, cv.CV_64F, 0, 1, ksize=3)
+    grad = np.sqrt(grad_x**2 + grad_y**2)
+    grad = np.uint8(255 * (grad / np.max(grad)))  # Normalizar a 0-255
+
+    # Aplicar un umbral al gradiente para resaltar regiones de alto contraste
+    _, mask = cv.threshold(grad, umbral_contraste, 255, cv.THRESH_BINARY)
 
     # Encontrar contornos en la máscara
     contornos, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -30,23 +40,10 @@ def segmentar_por_tamaño(roi, umbral_area=1000):
     # Dibujar los contornos filtrados en la máscara
     cv.drawContours(mask_filtrada, contornos_filtrados, -1, 255, thickness=cv.FILLED)
 
-    # Si hay contornos filtrados, seleccionar el más grande
-    if len(contornos_filtrados) > 0:
-        # Encontrar el contorno más grande
-        cnt_principal = max(contornos_filtrados, key=cv.contourArea)
+    # Aplicar la máscara a la imagen original
+    img_segmentada = cv.bitwise_and(img, img, mask=mask_filtrada)
 
-        # Crear una máscara solo para el contorno más grande
-        mask_principal = np.zeros_like(mask)
-        cv.drawContours(mask_principal, [cnt_principal], -1, 255, thickness=cv.FILLED)
-
-        # Aplicar la máscara a la ROI original
-        roi_filtrada = cv.bitwise_and(roi, roi, mask=mask_principal)
-    else:
-        # Si no hay contornos relevantes, devolver la máscara vacía y la ROI original
-        roi_filtrada = roi
-        mask_principal = np.zeros_like(mask)
-
-    return mask_principal, roi_filtrada
+    return mask_filtrada, img_segmentada
 
 def procesar_imagen(carpeta_imagenes):
     """
@@ -62,10 +59,12 @@ def procesar_imagen(carpeta_imagenes):
     # Índice de la imagen actual
     indice_imagen = 0
 
-    # Crear ventana para Segmentación
+    # Crear ventana para Segmentacion
     cv.namedWindow('Segmentacion')
 
-    # Trackbar para el umbral de área
+    # Trackbars para ajustar los parámetros de contraste
+    cv.createTrackbar('Umbral Contraste', 'Segmentacion', 100, 255, callback)  # Umbral de contraste (0-255)
+    cv.createTrackbar('Umbral Area', 'Segmentacion', 1000, 5000, callback)  # Umbral de área (100-5000)
 
     while True:
         # Cargar la imagen actual
@@ -77,11 +76,15 @@ def procesar_imagen(carpeta_imagenes):
             print(f"Error: No se pudo cargar la imagen {img_path}.")
             break
 
-        # Segmentar la imagen por tamaño
-        mask_segmented, img_segmented = segmentar_por_tamaño(img, umbral_area=1000)
+        # Obtener los valores de los trackbars
+        umbral_contraste = cv.getTrackbarPos('Umbral Contraste', 'Segmentacion')
+        umbral_area = cv.getTrackbarPos('Umbral Area', 'Segmentacion')
+
+        # Segmentar la imagen por contraste
+        mask, img_segmentada = segmentar_por_contraste(img, umbral_contraste, umbral_area)
 
         # Mostrar la imagen segmentada
-        cv.imshow('Segmentacion', img_segmented)
+        cv.imshow('Segmentacion', img_segmentada)
 
         # Mostrar el nombre de la imagen actual
         cv.setWindowTitle('Segmentacion', f'Imagen {indice_imagen + 1}/{len(imagenes)}: {imagenes[indice_imagen]}')
@@ -101,5 +104,5 @@ def procesar_imagen(carpeta_imagenes):
 
 if __name__ == '__main__':
     # Especifica la carpeta que contiene las imágenes
-    carpeta_imagenes = 'backend/src/data/img-API/USD/Model_12'
+    carpeta_imagenes = 'backend/src/data/img-API/VEF/Model_9'
     procesar_imagen(carpeta_imagenes)
