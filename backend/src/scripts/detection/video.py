@@ -179,25 +179,14 @@ def procesar_imagen(carpeta_imagenes):
             # Mostrar la imagen con el rectángulo detectado
             cv.imshow('Harris Corner Detection', img_rect)
 
-            # Recortar la ROI usando el rectángulo
-            width, height = int(rect[1][0]), int(rect[1][1])
-            center = rect[0]
-            angle = rect[2]
-
-            # Obtener la matriz de rotación
-            M = cv.getRotationMatrix2D(center, angle, 1)
-
-            # Rotar la imagen original
-            rotated = cv.warpAffine(img, M, (img.shape[1], img.shape[0]))
-
-            # Recortar la ROI rotada
-            roi = cv.getRectSubPix(rotated, (width, height), center)
-
             # Segmentar la ROI por tamaño
-            mask_segmented, roi_filtrada = segmentar_por_tamaño(roi, umbral_area=umbralArea)
+            mask_segmented, _ = segmentar_por_tamaño(img, umbral_area=umbralArea)
 
-            # Mostrar la ROI segmentada
-            cv.imshow('Segmentación', roi_filtrada)
+            # Dibujar la máscara segmentada en la imagen original
+            img_segmented = cv.bitwise_and(img, img, mask=mask_segmented)
+
+            # Mostrar la imagen con el ROI resaltado
+            cv.imshow('Segmentación', img_segmented)
         else:
             # Si no hay suficientes puntos, mostrar la imagen original
             cv.imshow('Harris Corner Detection', img)
