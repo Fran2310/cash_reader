@@ -5,15 +5,15 @@ import numpy as np
 def callback(input):
     pass
 
-def procesar_imagen():
-    root = os.getcwd()
-    imgPath = os.path.join(root, 'backend/src/data/img-API/VEF/Model_9/5b-vef_02-03-25_030015_orign.jpg')
-    img = cv.imread(imgPath)
-
-    # Verifica si la imagen se cargó correctamente
-    if img is None:
-        print("Error: No se pudo cargar la imagen.")
+def procesar_imagen(carpeta_imagenes):
+    # Obtener la lista de imágenes en la carpeta
+    imagenes = [img for img in os.listdir(carpeta_imagenes) if img.endswith(('orign.jpg', 'orign.jpeg'))]
+    if not imagenes:
+        print("Error: No se encontraron imágenes en la carpeta.")
         return
+
+    # Índice de la imagen actual
+    indice_imagen = 0
 
     # Crear ventanas para Canny y Harris Corner Detection
     cv.namedWindow('Canny')
@@ -32,7 +32,13 @@ def procesar_imagen():
     cv.createTrackbar('harrisThres', 'Harris Corner Detection', 1, 100, callback)  # Umbral (1-100)
 
     while True:
-        if cv.waitKey(1) == ord('q'):
+        # Cargar la imagen actual
+        img_path = os.path.join(carpeta_imagenes, imagenes[indice_imagen])
+        img = cv.imread(img_path)
+
+        # Verifica si la imagen se cargó correctamente
+        if img is None:
+            print(f"Error: No se pudo cargar la imagen {img_path}.")
             break
 
         # Obtener los valores de los trackbars para Canny
@@ -81,24 +87,42 @@ def procesar_imagen():
         # Obtener las coordenadas de los puntos detectados por Harris
         corner_coords = np.column_stack(np.where(dst > threshold))
 
-        # Intercambiar las coordenadas (y, x) -> (x, y)
-        corner_coords = corner_coords[:, [1, 0]]
+        # Invertir las coordenadas (fila, columna) a (x, y) para OpenCV
+        corner_coords = corner_coords[:, ::-1]
 
-        # Crear una copia de la imagen original para dibujar el contorno
-        img_contours = img.copy()
+        # Filtrar los puntos que están demasiado lejos
+        if len(corner_coords) > 4:
+            # Calcular el rectángulo mínimo que engloba todos los puntos
+            rect = cv.minAreaRect(corner_coords)
+            box = cv.boxPoints(rect)
+            box = np.int64(box)
 
-        # Si se detectaron suficientes puntos, calcular el convex hull
-        if len(corner_coords) > 2:  # Se necesitan al menos 3 puntos para un convex hull
-            # Calcular el convex hull
-            hull = cv.convexHull(corner_coords)
+            # Crear una copia de la imagen original para dibujar el rectángulo
+            img_rect = img.copy()
 
-            # Dibujar el convex hull en la imagen original
-            cv.drawContours(img_contours, [hull], -1, (0, 255, 0), 2)  # Contorno en verde
+            # Dibujar el rectángulo en la imagen original
+            cv.drawContours(img_rect, [box], 0, (0, 255, 0), 2)  # Rectángulo en verde
 
-        # Mostrar la imagen con el contorno detectado
-        cv.imshow('Harris Corner Detection', img_contours)
+            # Mostrar la imagen con el rectángulo detectado
+            cv.imshow('Harris Corner Detection', img_rect)
+
+        # Mostrar el nombre de la imagen actual
+        cv.setWindowTitle('Harris Corner Detection', f'Imagen {indice_imagen + 1}/{len(imagenes)}: {imagenes[indice_imagen]}')
+
+        # Esperar a que el usuario presione una tecla
+        key = cv.waitKey(1)
+
+        # Navegación entre imágenes
+        if key == ord('a'):  # Tecla 'a' para retroceder
+            indice_imagen = (indice_imagen - 1) % len(imagenes)
+        elif key == ord('d'):  # Tecla 'd' para avanzar
+            indice_imagen = (indice_imagen + 1) % len(imagenes)
+        elif key == ord('q'):  # Tecla 'q' para salir
+            break
 
     cv.destroyAllWindows()
 
 if __name__ == '__main__':
-    procesar_imagen()
+    # Especifica la carpeta que contiene las imágenes
+    carpeta_imagenes = 'backend/src/data/img-API/VEF/Model_9'
+    procesar_imagen(carpeta_imagenes)
