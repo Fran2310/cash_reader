@@ -1,9 +1,74 @@
 import cv2 as cv
 import os
 import numpy as np
+from scipy.spatial.distance import cdist
 
 def callback(input):
     pass
+
+def eliminar_outliers(puntos, umbral_distancia=50):
+    """
+    Elimina los puntos que están demasiado lejos del centroide.
+    :param puntos: Array de coordenadas de puntos (N, 2).
+    :param umbral_distancia: Distancia máxima permitida desde el centroide.
+    :return: Puntos filtrados.
+    """
+    if len(puntos) == 0:
+        return puntos
+
+    # Calcular el centroide de los puntos
+    centroide = np.mean(puntos, axis=0)
+
+    # Calcular la distancia de cada punto al centroide
+    distancias = cdist(puntos, [centroide]).flatten()  # Aplanar la matriz de distancias
+
+    # Filtrar los puntos que están dentro del umbral de distancia
+    puntos_filtrados = puntos[distancias <= umbral_distancia]
+
+    return puntos_filtrados
+
+def segmentar_por_tamaño(roi, umbral_area=1000):
+    """
+    Segmenta la ROI por tamaño.
+    :param roi: Región de interés (imagen recortada).
+    :param umbral_area: Área mínima para considerar una región relevante.
+    :return: Máscara binaria de la segmentación y la ROI filtrada.
+    """
+    # Convertir la ROI a escala de grises
+    gray = cv.cvtColor(roi, cv.COLOR_BGR2GRAY)
+
+    # Aplicar umbralización para obtener una máscara binaria
+    _, mask = cv.threshold(gray, 0, 255, cv.THRESH_OTSU)
+
+    # Encontrar contornos en la máscara
+    contornos, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # Filtrar contornos por área
+    contornos_filtrados = [cnt for cnt in contornos if cv.contourArea(cnt) > umbral_area]
+
+    # Crear una máscara vacía para dibujar los contornos filtrados
+    mask_filtrada = np.zeros_like(mask)
+
+    # Dibujar los contornos filtrados en la máscara
+    cv.drawContours(mask_filtrada, contornos_filtrados, -1, 255, thickness=cv.FILLED)
+
+    # Si hay contornos filtrados, seleccionar el más grande
+    if len(contornos_filtrados) > 0:
+        # Encontrar el contorno más grande
+        cnt_principal = max(contornos_filtrados, key=cv.contourArea)
+
+        # Crear una máscara solo para el contorno más grande
+        mask_principal = np.zeros_like(mask)
+        cv.drawContours(mask_principal, [cnt_principal], -1, 255, thickness=cv.FILLED)
+
+        # Aplicar la máscara a la ROI original
+        roi_filtrada = cv.bitwise_and(roi, roi, mask=mask_principal)
+    else:
+        # Si no hay contornos relevantes, devolver la máscara vacía y la ROI original
+        roi_filtrada = roi
+        mask_principal = np.zeros_like(mask)
+
+    return mask_principal, roi_filtrada
 
 def procesar_imagen(carpeta_imagenes):
     # Obtener la lista de imágenes en la carpeta
@@ -15,9 +80,10 @@ def procesar_imagen(carpeta_imagenes):
     # Índice de la imagen actual
     indice_imagen = 0
 
-    # Crear ventanas para Canny y Harris Corner Detection
+    # Crear ventanas para Canny, Harris Corner Detection y Segmentación
     cv.namedWindow('Canny')
     cv.namedWindow('Harris Corner Detection')
+    cv.namedWindow('Segmentación')
 
     # Trackbar para el tamaño del kernel del filtro borroso
     cv.createTrackbar('blurKernel', 'Canny', 1, 30, callback)
@@ -30,6 +96,8 @@ def procesar_imagen(carpeta_imagenes):
     cv.createTrackbar('blockSize', 'Harris Corner Detection', 2, 10, callback)  # blockSize (2-10)
     cv.createTrackbar('ksize', 'Harris Corner Detection', 3, 15, callback)      # ksize (3-15, debe ser impar)
     cv.createTrackbar('harrisThres', 'Harris Corner Detection', 1, 100, callback)  # Umbral (1-100)
+    cv.createTrackbar('umbralDistancia', 'Harris Corner Detection', 0, 200, callback)  # Umbral de distancia (0-200)
+    cv.createTrackbar('umbralArea', 'Harris Corner Detection', 100, 5000, callback)  # Umbral de área (100-5000)
 
     while True:
         # Cargar la imagen actual
@@ -65,6 +133,8 @@ def procesar_imagen(carpeta_imagenes):
         blockSize = cv.getTrackbarPos('blockSize', 'Harris Corner Detection')
         ksize = cv.getTrackbarPos('ksize', 'Harris Corner Detection')
         harrisThres = cv.getTrackbarPos('harrisThres', 'Harris Corner Detection')
+        umbralDistancia = cv.getTrackbarPos('umbralDistancia', 'Harris Corner Detection')
+        umbralArea = cv.getTrackbarPos('umbralArea', 'Harris Corner Detection')
 
         # Asegurarse de que ksize sea impar y mayor que 1
         if ksize < 3:
@@ -90,12 +160,15 @@ def procesar_imagen(carpeta_imagenes):
         # Invertir las coordenadas (fila, columna) a (x, y) para OpenCV
         corner_coords = corner_coords[:, ::-1]
 
-        # Filtrar los puntos que están demasiado lejos
-        if len(corner_coords) > 4:
+        # Eliminar puntos outsiders
+        corner_coords_filtrados = eliminar_outliers(corner_coords, umbral_distancia=umbralDistancia)
+
+        # Verificar si hay suficientes puntos para calcular un rectángulo
+        if len(corner_coords_filtrados) >= 4:
             # Calcular el rectángulo mínimo que engloba todos los puntos
-            rect = cv.minAreaRect(corner_coords)
+            rect = cv.minAreaRect(corner_coords_filtrados)
             box = cv.boxPoints(rect)
-            box = np.int64(box)
+            box = np.int64(box)  # Usar np.int64 para las coordenadas
 
             # Crear una copia de la imagen original para dibujar el rectángulo
             img_rect = img.copy()
@@ -105,6 +178,29 @@ def procesar_imagen(carpeta_imagenes):
 
             # Mostrar la imagen con el rectángulo detectado
             cv.imshow('Harris Corner Detection', img_rect)
+
+            # Recortar la ROI usando el rectángulo
+            width, height = int(rect[1][0]), int(rect[1][1])
+            center = rect[0]
+            angle = rect[2]
+
+            # Obtener la matriz de rotación
+            M = cv.getRotationMatrix2D(center, angle, 1)
+
+            # Rotar la imagen original
+            rotated = cv.warpAffine(img, M, (img.shape[1], img.shape[0]))
+
+            # Recortar la ROI rotada
+            roi = cv.getRectSubPix(rotated, (width, height), center)
+
+            # Segmentar la ROI por tamaño
+            mask_segmented, roi_filtrada = segmentar_por_tamaño(roi, umbral_area=umbralArea)
+
+            # Mostrar la ROI segmentada
+            cv.imshow('Segmentación', roi_filtrada)
+        else:
+            # Si no hay suficientes puntos, mostrar la imagen original
+            cv.imshow('Harris Corner Detection', img)
 
         # Mostrar el nombre de la imagen actual
         cv.setWindowTitle('Harris Corner Detection', f'Imagen {indice_imagen + 1}/{len(imagenes)}: {imagenes[indice_imagen]}')
