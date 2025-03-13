@@ -6,9 +6,12 @@ import useNarrator from "../hooks/useNarrator";
 import { useVoiceInterface } from "../hooks/useVoiceInterface";
 import useBillSum from "../hooks/useBillSum"; // Importar el hook de suma
 import { HELP_COMMANDS, HELP_INTERFACE } from "../constants/HELP_MESSAGE";
+import useFixedWindowSize from "../hooks/useFixedWindowSize"; // Importa el hook
 import "./Camera.css";
 
 const Camera = () => {
+
+    useFixedWindowSize();
     /* ================================
      REFS
      ================================ */
