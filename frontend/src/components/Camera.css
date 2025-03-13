@@ -1,13 +1,15 @@
-.camera-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* Para que la imagen de la cámara cubra el área sin deformarse */
+.camera-section {
+    flex-grow: 1; /* Ocupa el espacio disponible */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
 }
+
 .camera-container {
     width: 95%;
-    max-width: 600px; /* Limitar el ancho máximo */
-    height: auto;
-    aspect-ratio: 1; /* Mantener una relación cuadrada */
+    height: 95%; /* Esto asegura que la altura sea igual al ancho (proporción cuadrada) */
+    padding-bottom: 80%;
     position: relative;
     border: 0.5rem solid var(--color-accent);
     border-radius: 0.5rem;
@@ -22,6 +24,9 @@
 }
 
 .camera-video {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover; /* Para que la imagen de la cámara cubra el área sin deformarse */
