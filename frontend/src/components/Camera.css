@@ -8,8 +8,9 @@
 
 .camera-container {
     width: 95%;
-    height: 95%; /* Esto asegura que la altura sea igual al ancho (proporción cuadrada) */
-    padding-bottom: 80%;
+    max-width: 600px; /* Limitar el ancho máximo */
+    height: auto;
+    aspect-ratio: 1; /* Mantener una relación cuadrada */
     position: relative;
     border: 0.5rem solid var(--color-accent);
     border-radius: 0.5rem;
@@ -29,7 +30,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Para que la imagen de la cámara cubra el área sin deformarse */
+    object-fit: cover; /* Para que la imagen de la cámara cubra el área sin deformarse *//* Para que la imagen de la cámara cubra el área sin deformarse */
 }
 
 .download-container {
