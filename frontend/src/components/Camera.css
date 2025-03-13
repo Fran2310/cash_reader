@@ -1,23 +1,22 @@
 .camera-section {
-    flex-grow: 1; /* Ocupa el espacio disponible */
+    flex-grow: 1; /* Ocupa el espacio restante */
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     align-items: center;
+    justify-content: center;
+    width: 100%;
+    overflow: hidden; /* Evitar desbordamiento */
+}
+.camera-section {
+    flex-grow: 1; /* Ocupa el espacio restante */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    overflow: hidden; /* Evitar desbordamiento */
 }
 
-.camera-container {
-    width: 95%;
-    height: 95%; /* Esto asegura que la altura sea igual al ancho (proporción cuadrada) */
-    padding-bottom: 80%;
-    position: relative;
-    border: 0.5rem solid var(--color-accent);
-    border-radius: 0.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 1rem;
-}
 
 .scan-indicator-placeholder {
     height: 10rem; /* Ajusta este valor según el espacio que necesites */

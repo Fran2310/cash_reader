@@ -4,12 +4,19 @@ body.no-overscroll {
 /* Contenedor principal con flexbox */
 .container {
     display: flex;
-    position: relative;
     flex-direction: column;
-    justify-content: space-between;
-    height: 100%; /* Asegura que ocupe toda la altura de la ventana */
+    height: 100vh; /* Ocupa toda la altura de la pantalla */
+    width: 100vw; /* Ocupa todo el ancho de la pantalla */
+    max-width: 600px; /* Limitar el ancho máximo (ajusta según sea necesario) */
+    max-height: 1000px; /* Limitar la altura máxima (ajusta según sea necesario) */
+    margin: 0 auto; /* Centrar horizontalmente */
+    overflow: hidden; /* Ocultar cualquier desbordamiento */
+    padding: 16px;
+    box-sizing: border-box; /* Incluir el padding en el ancho total */
+    background-color: var(--color-base-light); /* Fondo para la aplicación */
+    border-radius: 0.5rem; /* Bordes redondeados */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Sombra para dar profundidad */
 }
-
 /* Estilo del encabezado */
 .header {
     display: flex;

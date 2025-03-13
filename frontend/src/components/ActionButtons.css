@@ -1,20 +1,31 @@
 .action-buttons-container {
-    display: flex;
-    position: relative;
-    justify-content: space-between;
     width: 100%;
+    max-width: 600px; /* Limitar el ancho máximo */
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 16px;
+    background-color: var(--color-base-light);
+    border-radius: 0.5rem;
+    box-shadow: 0 8px 8px var(--color-base-dark-shadow);
+    box-sizing: border-box; /* Incluir el padding en el ancho total */
+    margin: 0 auto; /* Centrar horizontalmente */
 }
 
+
 .action-button {
-    width: 50%;
-    height: 20vh;
+    width: 48%; /* Ajustar el ancho de los botones */
+    height: auto;
+    padding: 12px;
     border: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    border-radius: 0.5rem;
+    background-color: var(--color-base-dark);
+    color: white;
+    font-size: 16px;
     cursor: pointer;
     transition: transform 0.2s ease;
 }
+
 
 .action-button img {
     width: 5.8rem;

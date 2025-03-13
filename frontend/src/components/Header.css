@@ -1,7 +1,21 @@
+.header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.8rem 0;
+    height: 10vh; /* Altura relativa a la pantalla */
+    max-height: 80px; /* Limitar la altura máxima */
+    width: 100%;
+    background-color: var(--color-base-light);
+    box-shadow: 0 4px 8px var(--color-base-dark-shadow);
+    position: sticky;
+    top: 0;
+    z-index: 1000; /* Asegurar que esté por encima de otros elementos */
+}
 .header-button {
     display: flex;
-    justify-content: center; /* Centrado horizontal */
-    align-items: center; /* Centrado vertical */
+    justify-content: center;
+    align-items: center;
     padding: 10px;
     background-color: var(--color-base-light);
     border: none;
@@ -9,6 +23,8 @@
     box-shadow: 0 8px 8px var(--color-base-dark-shadow);
     transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
     width: calc(85% + 0.5rem);
+    max-width: 600px; /* Limitar el ancho máximo */
+    margin: 0 auto; /* Centrar horizontalmente */
 }
 
 .header-button:active {
