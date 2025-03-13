@@ -1,18 +1,15 @@
 .camera-section {
-    flex-grow: 1; /* Ocupa el espacio restante */
+    flex-grow: 1; /* Ocupa el espacio disponible */
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    width: 100%;
-    overflow: hidden; /* Evitar desbordamiento */
 }
 
 .camera-container {
-    width: 90%;
-    max-width: 600px; /* Limitar el ancho máximo */
-    height: auto;
-    aspect-ratio: 1; /* Mantener una relación cuadrada */
+    width: 95%;
+    height: 95%; /* Esto asegura que la altura sea igual al ancho (proporción cuadrada) */
+    padding-bottom: 80%;
     position: relative;
     border: 0.5rem solid var(--color-accent);
     border-radius: 0.5rem;
@@ -21,7 +18,6 @@
     align-items: center;
     margin-top: 1rem;
 }
-
 
 .scan-indicator-placeholder {
     height: 10rem; /* Ajusta este valor según el espacio que necesites */
@@ -33,7 +29,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Para que la imagen de la cámara cubra el área sin deformarse *//* Para que la imagen de la cámara cubra el área sin deformarse */
+    object-fit: cover; /* Para que la imagen de la cámara cubra el área sin deformarse */
 }
 
 .download-container {

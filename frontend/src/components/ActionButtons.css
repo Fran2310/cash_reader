@@ -1,26 +1,17 @@
 .action-buttons-container {
-    width: 100%;
-    max-width: 300px; /* Limitar el ancho máximo */
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 16px;
-    background-color: var(--color-base-light);
-    border-radius: 0.5rem;
-    box-shadow: 0 8px 8px var(--color-base-dark-shadow);
-    box-sizing: border-box; /* Incluir el padding en el ancho total */
-    margin: 0 auto; /* Centrar horizontalmente */
+    position: relative;
+    justify-content: space-between;
+    width: 100%;
 }
 
 .action-button {
-    width: 100%;
-    height: auto;
-    padding: 12px;
+    width: 50%;
+    height: 20vh;
     border: none;
-    border-radius: 8px;
-    background-color: var(--color-base-dark);
-    color: white;
-    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
     transition: transform 0.2s ease;
 }
@@ -30,7 +21,6 @@
     height: auto;
     transition: transform 0.2s ease;
 }
-
 
 .green-button {
     background-color: var(--color-accent);
@@ -49,32 +39,4 @@
     width: 7rem; /* Tamaño específico para el ícono de la cámara */
     height: auto;
     transition: transform 0.2s ease;
-}
-
-.sidebar-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.sidebar-buttons .action-button {
-    width: 100%;
-    height: auto;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    background-color: var(--color-base-dark);
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.action-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-.action-button:hover img {
-    transform: scale(1.1);
 }
