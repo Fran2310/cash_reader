@@ -74,6 +74,7 @@ export default defineConfig({
                         form_factor: "narrow",
                     },
                 ],
+                
             },
         }),
     ],

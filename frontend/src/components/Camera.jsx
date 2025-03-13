@@ -11,7 +11,6 @@ import "./Camera.css";
 
 const Camera = () => {
 
-    useFixedWindowSize();
     /* ================================
      REFS
      ================================ */
