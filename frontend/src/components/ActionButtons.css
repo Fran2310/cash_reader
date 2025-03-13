@@ -9,6 +9,7 @@
     border-radius: 0.5rem;
     box-shadow: 0 8px 8px var(--color-base-dark-shadow);
     box-sizing: border-box; /* Incluir el padding en el ancho total */
+    margin: 0 auto; /* Centrar horizontalmente */
 }
 
 .action-button {

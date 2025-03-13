@@ -7,17 +7,16 @@ body {
 }
 /* Contenedor principal con flexbox */
 .container {
-    display: grid;
-    grid-template-columns: 1fr 300px; /* Panel lateral de 300px */
-    grid-template-rows: auto 1fr;
+    display: flex;
+    flex-direction: column;
     height: 100vh; /* Ocupa toda la altura de la pantalla */
-    max-width: 1200px; /* Limitar el ancho máximo */
-    margin: 0 auto; /* Centrar horizontalmente */
-    gap: 16px;
+    width: 100vw; /* Ocupa todo el ancho de la pantalla */
+    max-width: 100%; /* Evitar desbordamiento horizontal */
+    overflow: hidden; /* Ocultar cualquier desbordamiento */
     padding: 16px;
     box-sizing: border-box; /* Incluir el padding en el ancho total */
-    overflow-y: auto; /* Habilitar scroll vertical si el contenido es demasiado largo */
-    }
+}
+
 /* Estilo del encabezado */
 .header {
     display: flex;
@@ -29,13 +28,10 @@ body {
 
 @media (max-width: 768px) {
     .container {
-        grid-template-columns: 1fr; /* Una sola columna en móviles */
-        grid-template-rows: auto auto 1fr;
+        flex-direction: column; /* Una sola columna en móviles */
     }
 
     .action-buttons-container {
-        grid-column: 1 / 2;
-        grid-row: 3 / 4;
         max-width: none; /* Permitir que ocupe todo el ancho en móviles */
     }
 

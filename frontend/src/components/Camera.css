@@ -1,13 +1,15 @@
 .camera-section {
-    flex-grow: 1; /* Ocupa el espacio disponible */
+    flex-grow: 1; /* Ocupa el espacio restante */
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     align-items: center;
+    justify-content: center;
+    width: 100%;
+    overflow: hidden; /* Evitar desbordamiento */
 }
 
 .camera-container {
-    width: 95%;
+    width: 90%;
     max-width: 600px; /* Limitar el ancho máximo */
     height: auto;
     aspect-ratio: 1; /* Mantener una relación cuadrada */
@@ -19,6 +21,7 @@
     align-items: center;
     margin-top: 1rem;
 }
+
 
 .scan-indicator-placeholder {
     height: 10rem; /* Ajusta este valor según el espacio que necesites */
