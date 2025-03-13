@@ -1,20 +1,69 @@
-body.no-overscroll {
-    overscroll-behavior: none;
-}
-/* Contenedor principal con flexbox */
 .container {
-    display: flex;
-    position: relative;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%; /* Asegura que ocupe toda la altura de la ventana */
+    display: grid;
+    grid-template-columns: 1fr 300px; /* Panel lateral de 300px */
+    grid-template-rows: auto 1fr;
+    height: 100vh;
+    gap: 16px;
+    padding: 16px;
 }
 
-/* Estilo del encabezado */
 .header {
+    grid-column: 1 / -1; /* El header ocupa ambas columnas */
+    grid-row: 1 / 2;
     display: flex;
-    justify-content: center; /* Centrado horizontal */
-    align-items: center; /* Centrado vertical */
+    justify-content: center;
+    align-items: center;
     padding: 0.8rem 0;
-    /* border: 2px solid var(--color-emphasis); */
+}
+
+.camera-section {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.action-buttons-container {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background-color: var(--color-base-light);
+    border-radius: 0.5rem;
+    box-shadow: 0 8px 8px var(--color-base-dark-shadow);
+}
+
+@media (max-width: 768px) {
+    .container {
+        grid-template-columns: 1fr; /* Una sola columna en móviles */
+        grid-template-rows: auto auto 1fr;
+    }
+
+    .action-buttons-container {
+        grid-column: 1 / 2;
+        grid-row: 3 / 4;
+    }
+
+    .header-button {
+        position: static;
+        transform: none;
+        margin-bottom: 16px;
+    }
+
+    .camera-container {
+        width: 100%;
+        max-width: none;
+    }
 }
