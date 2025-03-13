@@ -21,7 +21,7 @@ a {
 .front-page {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    min-height: 90vh; /* Ensure it takes the full height of the viewport */
+    max-height: 100vh; /* Ensure it takes the full height of the viewport */
     background: no-repeat center center;
     background-size: cover;
     position: relative;
